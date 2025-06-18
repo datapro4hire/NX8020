@@ -3,7 +3,12 @@ import Header from './components/Header';
 import InputSection from './components/InputSection';
 import ProcessingSection from './components/ProcessingSection';
 import ResultsSection from './components/ResultsSection';
+import ProcessVisualization from './components/ProcessVisualization';
+import ProcessDrillDown from './components/ProcessDrillDown';
 import Footer from './components/Footer';
+import { ProcessAnalyzer } from './utils/processAnalyzer';
+import { ProcessAnalysis, ProcessNode } from './types/process';
+import { ParsedData } from './utils/fileParser';
 
 export interface ProcessingResults {
   llm_response: string;
@@ -19,29 +24,48 @@ function App() {
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<ProcessingResults | null>(null);
+  const [processAnalysis, setProcessAnalysis] = useState<ProcessAnalysis | null>(null);
+  const [selectedNode, setSelectedNode] = useState<ProcessNode | null>(null);
+  const [parsedFileData, setParsedFileData] = useState<ParsedData | null>(null);
 
-  const handleAnalyze = async (text: string) => {
+  const handleAnalyze = async (text: string, fileData?: ParsedData) => {
     setInputText(text);
     setIsProcessing(true);
     setResults(null);
+    setProcessAnalysis(null);
+    setSelectedNode(null);
+    setParsedFileData(fileData || null);
 
-    // Simulate API call to Flask backend
     try {
-      // In a real app, this would be: await fetch('/analyze', { method: 'POST', ... })
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate processing time
+      // Simulate API call to Flask backend
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       // Mock results
       const mockResults: ProcessingResults = {
         llm_response: generateMockLLMResponse(text),
         ml_prediction: generateMockMLPrediction(text),
-        ml_confidence: Math.random() * 0.3 + 0.7, // 70-100%
+        ml_confidence: Math.random() * 0.3 + 0.7,
         processing_time: {
-          llm: Math.random() * 2 + 1, // 1-3 seconds
-          ml: Math.random() * 1 + 0.5, // 0.5-1.5 seconds
+          llm: Math.random() * 2 + 1,
+          ml: Math.random() * 1 + 0.5,
         }
       };
       
       setResults(mockResults);
+
+      // If we have XES data, perform process analysis
+      if (fileData?.type === 'xes' && fileData.preview?.events) {
+        const analyzer = new ProcessAnalyzer(fileData.preview.events);
+        const analysis = analyzer.analyze();
+        setProcessAnalysis(analysis);
+      } else if (fileData?.type === 'csv' && fileData.preview?.rows) {
+        // Generate mock XES events from CSV data for demonstration
+        const mockEvents = generateMockXESFromCSV(fileData.preview.rows, fileData.preview.headers || []);
+        const analyzer = new ProcessAnalyzer(mockEvents);
+        const analysis = analyzer.analyze();
+        setProcessAnalysis(analysis);
+      }
+      
     } catch (error) {
       console.error('Processing failed:', error);
     } finally {
@@ -49,20 +73,40 @@ function App() {
     }
   };
 
+  const generateMockXESFromCSV = (rows: string[][], headers: string[]): any[] => {
+    const events: any[] = [];
+    
+    rows.forEach((row, index) => {
+      const caseId = `case_${Math.floor(index / 5) + 1}`;
+      const activities = ['Data Collection', 'Data Validation', 'Analysis', 'Review', 'Approval'];
+      const activity = activities[index % activities.length];
+      
+      events.push({
+        case_id: caseId,
+        concept_name: activity,
+        timestamp: new Date(Date.now() - (rows.length - index) * 3600000).toISOString(),
+        resource: `Resource_${Math.floor(Math.random() * 5) + 1}`,
+        lifecycle_transition: 'complete'
+      });
+    });
+    
+    return events;
+  };
+
   const generateMockLLMResponse = (text: string): string => {
     const responses = [
-      `Based on the input text, I can identify several key themes and sentiments. The content appears to focus on ${text.split(' ').slice(0, 3).join(' ')}... This suggests a ${Math.random() > 0.5 ? 'positive' : 'concerning'} situation that requires ${Math.random() > 0.5 ? 'immediate attention' : 'careful monitoring'}. I recommend analyzing the underlying patterns and implementing appropriate measures to address the identified issues.`,
-      `The text analysis reveals important insights about user sentiment and context. The main topics discussed include ${text.split(' ').slice(-3).join(' ')}... This indicates a ${Math.random() > 0.5 ? 'high priority' : 'medium priority'} scenario that should be addressed through targeted interventions and follow-up actions.`,
-      `From the provided content, I can extract several meaningful patterns and trends. The language suggests ${Math.random() > 0.5 ? 'urgency' : 'routine processing'} with key indicators pointing toward ${Math.random() > 0.5 ? 'customer satisfaction issues' : 'operational optimization opportunities'}. Further analysis would help determine the most effective response strategy.`
+      `Based on the input analysis, I can identify several key patterns and insights. The data suggests ${Math.random() > 0.5 ? 'significant process inefficiencies' : 'opportunities for optimization'} with particular attention needed for ${Math.random() > 0.5 ? 'bottleneck resolution' : 'waste reduction'}. The process flow indicates ${Math.random() > 0.5 ? 'high variability in execution times' : 'consistent performance patterns'} that require targeted interventions.`,
+      `The comprehensive analysis reveals important process mining insights. Key findings include ${Math.random() > 0.5 ? 'critical path bottlenecks' : 'resource allocation issues'} and ${Math.random() > 0.5 ? 'workflow inefficiencies' : 'performance optimization opportunities'}. I recommend implementing ${Math.random() > 0.5 ? 'automated monitoring systems' : 'process standardization measures'} to address these challenges.`,
+      `From the process data, I can extract meaningful patterns indicating ${Math.random() > 0.5 ? 'suboptimal resource utilization' : 'workflow optimization potential'}. The analysis shows ${Math.random() > 0.5 ? 'significant wait times' : 'processing delays'} in key activities, suggesting the need for ${Math.random() > 0.5 ? 'capacity planning improvements' : 'process reengineering initiatives'}.`
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   };
 
   const generateMockMLPrediction = (text: string): string => {
-    const predictions = ['Critical', 'High Priority', 'Medium Priority', 'Low Priority', 'Routine'];
+    const predictions = ['Critical Bottleneck', 'High Efficiency', 'Moderate Waste', 'Optimal Flow', 'Process Anomaly'];
     const weights = text.toLowerCase().includes('urgent') || text.toLowerCase().includes('critical') 
-      ? [0.4, 0.3, 0.2, 0.08, 0.02] 
-      : [0.1, 0.2, 0.4, 0.2, 0.1];
+      ? [0.4, 0.1, 0.3, 0.1, 0.1] 
+      : [0.1, 0.3, 0.2, 0.3, 0.1];
     
     const random = Math.random();
     let cumulative = 0;
@@ -74,28 +118,51 @@ function App() {
       }
     }
     
-    return predictions[2]; // fallback to medium priority
+    return predictions[2];
+  };
+
+  const handleNodeSelect = (node: ProcessNode) => {
+    setSelectedNode(node);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="relative">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.02%22%3E%3Ccircle cx=%2230%22 cy=%2230%22 r=%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
+        <div className="absolute inset-0 opacity-50"></div>
         
         <div className="relative z-10">
           <Header />
           
-          <main className="container mx-auto px-4 py-8 max-w-6xl">
-            <div className="grid lg:grid-cols-2 gap-8">
-              <div className="space-y-8">
-                <InputSection onAnalyze={handleAnalyze} isProcessing={isProcessing} />
-                <ProcessingSection isProcessing={isProcessing} />
+          <main className="container mx-auto px-4 py-8 max-w-7xl">
+            <div className="space-y-8">
+              {/* Input and Processing Section */}
+              <div className="grid lg:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                  <InputSection onAnalyze={handleAnalyze} isProcessing={isProcessing} />
+                  <ProcessingSection isProcessing={isProcessing} />
+                </div>
+                
+                <div>
+                  <ResultsSection results={results} inputText={inputText} />
+                </div>
               </div>
-              
-              <div>
-                <ResultsSection results={results} inputText={inputText} />
-              </div>
+
+              {/* Process Visualization Section */}
+              {processAnalysis && (
+                <div className="space-y-8">
+                  <ProcessVisualization 
+                    analysis={processAnalysis} 
+                    onNodeSelect={handleNodeSelect}
+                  />
+                  
+                  {selectedNode && (
+                    <ProcessDrillDown 
+                      selectedNode={selectedNode} 
+                      insights={processAnalysis.insights}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           </main>
           

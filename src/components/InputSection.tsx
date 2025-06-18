@@ -4,7 +4,7 @@ import { parseFile, ParsedData } from '../utils/fileParser';
 import FilePreview from './FilePreview';
 
 interface InputSectionProps {
-  onAnalyze: (text: string) => void;
+  onAnalyze: (text: string, fileData?: ParsedData) => void;
   isProcessing: boolean;
 }
 
@@ -20,7 +20,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isProcessing }) 
     e.preventDefault();
     const textToAnalyze = parsedData ? parsedData.content : inputText.trim();
     if (textToAnalyze && !isProcessing) {
-      onAnalyze(textToAnalyze);
+      onAnalyze(textToAnalyze, parsedData || undefined);
     }
   };
 
@@ -68,8 +68,8 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isProcessing }) 
     try {
       const parsed = await parseFile(file);
       setParsedData(parsed);
-      setInputText(''); // Clear manual text input
-      setActiveTab('text'); // Switch to text tab to show results
+      setInputText('');
+      setActiveTab('text');
     } catch (error) {
       setParseError(error instanceof Error ? error.message : 'Failed to parse file');
     } finally {
@@ -92,9 +92,9 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isProcessing }) 
   };
 
   const sampleTexts = [
-    "Customer is complaining about slow response times and requesting immediate escalation.",
-    "System performance has degraded significantly over the past 24 hours with multiple service interruptions.",
-    "User feedback indicates high satisfaction with the new feature implementation and requests for additional functionality."
+    "Process mining analysis shows bottlenecks in customer service workflow with average wait times exceeding 2 hours.",
+    "Manufacturing process data indicates critical inefficiencies in quality control stage affecting overall throughput.",
+    "Healthcare patient flow analysis reveals optimization opportunities in emergency department triage processes."
   ];
 
   return (
@@ -145,6 +145,11 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isProcessing }) 
                     <span className="text-xs text-purple-300">
                       ({parsedData.type.toUpperCase()})
                     </span>
+                    {parsedData.type === 'xes' && (
+                      <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
+                        Process Mining Ready
+                      </span>
+                    )}
                   </div>
                   <button
                     type="button"
