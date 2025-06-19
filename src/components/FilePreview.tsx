@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Database, Activity, Eye, BarChart3 } from 'lucide-react';
+import { FileText, Database, Activity, Eye, BarChart3, FileJson, FileSpreadsheet } from 'lucide-react';
 import { ParsedData } from '../utils/fileParser';
 
 interface FilePreviewProps {
@@ -12,6 +12,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({ parsedData, onClose }) => {
     switch (parsedData.type) {
       case 'csv': return <Database className="h-5 w-5 text-green-400" />;
       case 'xes': return <Activity className="h-5 w-5 text-blue-400" />;
+      case 'json': return <FileJson className="h-5 w-5 text-yellow-400" />;
+      case 'xlsx': return <FileSpreadsheet className="h-5 w-5 text-teal-400" />;
       default: return <FileText className="h-5 w-5 text-purple-400" />;
     }
   };
@@ -20,6 +22,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({ parsedData, onClose }) => {
     switch (parsedData.type) {
       case 'csv': return 'CSV Data';
       case 'xes': return 'XES Process Log';
+      case 'json': return 'JSON Data';
+      case 'xlsx': return 'XLSX Spreadsheet';
       default: return 'Text File';
     }
   };
@@ -59,11 +63,16 @@ const FilePreview: React.FC<FilePreviewProps> = ({ parsedData, onClose }) => {
               Events: {parsedData.preview.totalEvents.toLocaleString()}
             </span>
           )}
+          {parsedData.preview?.sheetName && (
+            <span className="text-teal-300">
+              Sheet: {parsedData.preview.sheetName}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* CSV Preview */}
-      {parsedData.type === 'csv' && parsedData.preview && (
+      {/* CSV or XLSX Preview */}
+      {(parsedData.type === 'csv' || parsedData.type === 'xlsx') && parsedData.preview && (
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4 text-green-400" />
@@ -75,7 +84,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({ parsedData, onClose }) => {
               <thead>
                 <tr className="border-b border-white/20">
                   {parsedData.preview.headers?.map((header, index) => (
-                    <th key={index} className="text-left p-2 text-green-300 font-medium">
+                    <th key={index} className={`text-left p-2 font-medium ${
+                      parsedData.type === 'xlsx' ? 'text-teal-300' : 'text-green-300'
+                    }`}>
                       {header}
                     </th>
                   ))}
@@ -157,6 +168,25 @@ const FilePreview: React.FC<FilePreviewProps> = ({ parsedData, onClose }) => {
             <pre className="text-xs text-white whitespace-pre-wrap">
               {parsedData.content.substring(0, 500)}
               {parsedData.content.length > 500 && '...'}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {/* JSON Preview */}
+      {parsedData.type === 'json' && (
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <FileJson className="h-4 w-4 text-yellow-400" />
+            <span className="text-sm font-medium text-white">JSON Content Preview</span>
+          </div>
+          
+          <div className="bg-white/10 rounded-lg p-3 max-h-48 overflow-y-auto">
+            <pre className="text-xs text-white whitespace-pre-wrap">
+              {parsedData.content.length > 1000 
+                ? `${parsedData.content.substring(0, 1000)}...` 
+                : parsedData.content
+              }
             </pre>
           </div>
         </div>

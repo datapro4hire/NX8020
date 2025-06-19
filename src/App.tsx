@@ -56,12 +56,18 @@ function App() {
       // If we have XES data, perform process analysis
       if (fileData?.type === 'xes' && fileData.preview?.events) {
         const analyzer = new ProcessAnalyzer(fileData.preview.events);
-        const analysis = analyzer.analyze();
-        setProcessAnalysis(analysis);
-      } else if (fileData?.type === 'csv' && fileData.preview?.rows) {
+        setProcessAnalysis(analyzer.analyze());
+      } else if ((fileData?.type === 'csv' || fileData?.type === 'xlsx') && fileData.preview?.rows) {
         // Generate mock XES events from CSV data for demonstration
         const mockEvents = generateMockXESFromCSV(fileData.preview.rows, fileData.preview.headers || []);
         const analyzer = new ProcessAnalyzer(mockEvents);
+        setProcessAnalysis(analyzer.analyze());
+      } else if (fileData?.type === 'json' && fileData.content) {
+        // For JSON, we could parse it and try to extract process data
+        // For this example, we'll generate mock events based on some heuristic
+        // or simply treat its content as text for LLM.
+        // Here, let's try to generate mock events if it's an array of objects.
+        const mockEvents = generateMockXESFromJSON(fileData.content);
         const analysis = analyzer.analyze();
         setProcessAnalysis(analysis);
       }
@@ -91,6 +97,31 @@ function App() {
     });
     
     return events;
+  };
+
+  const generateMockXESFromJSON = (jsonContent: string): any[] => {
+    try {
+      const data = JSON.parse(jsonContent);
+      if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+        // Assuming an array of event-like objects
+        return data.map((item, index) => ({
+          case_id: item.case_id || `json_case_${Math.floor(index / 3) + 1}`,
+          concept_name: item.activity || item.concept_name || `Activity ${index + 1}`,
+          timestamp: item.timestamp || new Date(Date.now() - (data.length - index) * 1800000).toISOString(),
+          resource: item.resource || `Resource_JSON_${(index % 3) + 1}`,
+          lifecycle_transition: item.lifecycle_transition || 'complete',
+          ...item // include other properties
+        }));
+      }
+    } catch (e) {
+      console.warn("Could not parse JSON for mock XES generation, or it's not an array of objects.", e);
+    }
+    // Fallback if JSON is not in the expected format or parsing fails
+    return [{
+      case_id: 'json_fallback_case',
+      concept_name: 'JSON Data Processed',
+      timestamp: new Date().toISOString()
+    }];
   };
 
   const generateMockLLMResponse = (text: string): string => {
