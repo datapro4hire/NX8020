@@ -33,7 +33,7 @@ const Footer: React.FC = () => {
         
         <div className="mt-6 pt-6 border-t border-white/10 text-center">
           <p className="text-purple-300 text-sm">
-            AI Dual Stack Demo - Integrating LLM reasoning with traditional ML classification
+            NX8020™ - Process Mining - Integrating LLM reasoning with traditional ML classification
           </p>
         </div>
       </div>

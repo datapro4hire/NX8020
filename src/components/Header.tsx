@@ -14,7 +14,7 @@ const Header: React.FC = () => {
               </div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">AI Dual Stack</h1>
+              <h1 className="text-2xl font-bold text-white">NX8020™</h1>
               <p className="text-purple-200 text-sm">LLM + ML Processing Engine</p>
             </div>
           </div>
