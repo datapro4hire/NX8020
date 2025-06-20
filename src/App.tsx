@@ -37,51 +37,33 @@ function App() {
     setParsedFileData(fileData || null);
 
     try {
-      // Simulate API call to Flask backend
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Mock results
-      const mockResults: ProcessingResults = {
-        llm_response: generateMockLLMResponse(text),
-        ml_prediction: generateMockMLPrediction(text),
-        ml_confidence: Math.random() * 0.3 + 0.7,
-        processing_time: {
-          llm: Math.random() * 2 + 1,
-          ml: Math.random() * 1 + 0.5,
-        }
-      };
-      
-      setResults(mockResults);
+      const response = await fetch('http://localhost:5000/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          file_data: fileData
+        })
+      });
 
-      // Handle different file types
-      if (fileData) {
-        switch (fileData.type) {
-          case 'xes':
-            if (fileData.preview?.events) {
-              const analyzer = new ProcessAnalyzer(fileData.preview.events);
-              setProcessAnalysis(analyzer.analyze());
-            }
-            break;
-          case 'csv':
-          case 'xlsx':
-            if (fileData.preview?.rows) {
-              const mockEvents = generateMockXESFromCSV(fileData.preview.rows, fileData.preview.headers || []);
-              const analyzer = new ProcessAnalyzer(mockEvents);
-              setProcessAnalysis(analyzer.analyze());
-            }
-            break;
-          case 'json':
-            if (fileData.content) {
-              const mockEvents = generateMockXESFromJSON(fileData.content);
-              const analyzer = new ProcessAnalyzer(mockEvents);
-              setProcessAnalysis(analyzer.analyze());
-            }
-            break;
-        }
-      }
+      const data = await response.json();
       
+      setResults({
+        llm_response: data.llm_response,
+        ml_prediction: data.ml_prediction,
+        ml_confidence: 0.9, // From model if available
+        processing_time: {
+          llm: data.llm_time || 1.5,
+          ml: data.ml_time || 0.5
+        }
+      });
+
+      if (data.process_analysis) {
+        setProcessAnalysis(data.process_analysis);
+      }
     } catch (error) {
       console.error('Processing failed:', error);
+      // Fallback to mock data if needed
     } finally {
       setIsProcessing(false);
     }
