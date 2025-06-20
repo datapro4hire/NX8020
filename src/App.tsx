@@ -53,23 +53,31 @@ function App() {
       
       setResults(mockResults);
 
-      // If we have XES data, perform process analysis
-      if (fileData?.type === 'xes' && fileData.preview?.events) {
-        const analyzer = new ProcessAnalyzer(fileData.preview.events);
-        setProcessAnalysis(analyzer.analyze());
-      } else if ((fileData?.type === 'csv' || fileData?.type === 'xlsx') && fileData.preview?.rows) {
-        // Generate mock XES events from CSV data for demonstration
-        const mockEvents = generateMockXESFromCSV(fileData.preview.rows, fileData.preview.headers || []);
-        const analyzer = new ProcessAnalyzer(mockEvents);
-        setProcessAnalysis(analyzer.analyze());
-      } else if (fileData?.type === 'json' && fileData.content) {
-        // For JSON, we could parse it and try to extract process data
-        // For this example, we'll generate mock events based on some heuristic
-        // or simply treat its content as text for LLM.
-        // Here, let's try to generate mock events if it's an array of objects.
-        const mockEvents = generateMockXESFromJSON(fileData.content);
-        const analysis = analyzer.analyze();
-        setProcessAnalysis(analysis);
+      // Handle different file types
+      if (fileData) {
+        switch (fileData.type) {
+          case 'xes':
+            if (fileData.preview?.events) {
+              const analyzer = new ProcessAnalyzer(fileData.preview.events);
+              setProcessAnalysis(analyzer.analyze());
+            }
+            break;
+          case 'csv':
+          case 'xlsx':
+            if (fileData.preview?.rows) {
+              const mockEvents = generateMockXESFromCSV(fileData.preview.rows, fileData.preview.headers || []);
+              const analyzer = new ProcessAnalyzer(mockEvents);
+              setProcessAnalysis(analyzer.analyze());
+            }
+            break;
+          case 'json':
+            if (fileData.content) {
+              const mockEvents = generateMockXESFromJSON(fileData.content);
+              const analyzer = new ProcessAnalyzer(mockEvents);
+              setProcessAnalysis(analyzer.analyze());
+            }
+            break;
+        }
       }
       
     } catch (error) {

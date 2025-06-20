@@ -53,11 +53,11 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isProcessing }) 
   };
 
   const handleFileUpload = async (file: File) => {
-    const allowedExtensions = ['txt', 'csv', 'xes'];
+    const allowedExtensions = ['txt', 'csv', 'xes', 'json', 'xlsx'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     
     if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-      setParseError('Please upload a .txt, .csv, or .xes file');
+      setParseError('Please upload a .txt, .csv, .xes, .json, or .xlsx file');
       return;
     }
 
@@ -227,7 +227,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isProcessing }) 
                   {isParsingFile ? 'Processing file...' : 'Drop your file here'}
                 </p>
                 <p className="text-purple-300 text-sm">
-                  Supports .txt, .csv, and .xes files
+                  Supports .txt, .csv, .xes, .json, and .xlsx files
                 </p>
               </div>
               
@@ -245,11 +245,19 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isProcessing }) 
                   <Activity className="h-3 w-3" />
                   <span>XES</span>
                 </div>
+                <div className="flex items-center space-x-1 text-yellow-300">
+                  <FileText className="h-3 w-3" />
+                  <span>JSON</span>
+                </div>
+                <div className="flex items-center space-x-1 text-teal-300">
+                  <FileText className="h-3 w-3" />
+                  <span>XLSX</span>
+                </div>
               </div>
 
               <input
                 type="file"
-                accept=".txt,.csv,.xes"
+                accept=".txt,.csv,.xes,.json,.xlsx"
                 onChange={handleFileSelect}
                 className="hidden"
                 id="file-upload"

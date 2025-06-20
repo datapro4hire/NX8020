@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 
 export interface ParsedData {
-  type: 'csv' | 'xes' | 'text';
+  type: 'csv' | 'xes' | 'text' | 'json' | 'xlsx';
   content: string;
   preview?: {
     headers?: string[];
@@ -46,6 +46,10 @@ export const parseFile = async (file: File): Promise<ParsedData> => {
     return parseCSV(file, baseData);
   } else if (fileExtension === 'xes') {
     return parseXES(file, baseData);
+  } else if (fileExtension === 'json') {
+    return parseJSON(file, baseData);
+  } else if (fileExtension === 'xlsx') {
+    return parseXLSX(file, baseData);
   } else {
     // Default text parsing
     const text = await file.text();
@@ -146,6 +150,30 @@ const parseXES = async (file: File, baseData: ParsedData): Promise<ParsedData> =
   } catch (error) {
     throw new Error(`XES parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+};
+
+const parseJSON = async (file: File, baseData: ParsedData): Promise<ParsedData> => {
+  const text = await file.text();
+  try {
+    JSON.parse(text); // Validate JSON
+    return {
+      ...baseData,
+      type: 'json',
+      content: text
+    };
+  } catch (error) {
+    throw new Error('Invalid JSON format');
+  }
+};
+
+const parseXLSX = async (file: File, baseData: ParsedData): Promise<ParsedData> => {
+  // For now, we'll treat XLSX as text and parse it later
+  const text = await file.text();
+  return {
+    ...baseData,
+    type: 'xlsx',
+    content: text
+  };
 };
 
 const getXESAttributeValue = (element: Element, key: string): string | undefined => {
