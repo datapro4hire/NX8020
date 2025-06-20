@@ -37,16 +37,25 @@ function App() {
     setParsedFileData(fileData || null);
 
     try {
+      const formData = new FormData();
+      if (fileData) {
+        formData.append('file', new Blob([fileData.content]), 
+          fileData.metadata?.fileName || 'uploaded_file');
+      }
+      formData.append('text', text);
+
       const response = await fetch('http://localhost:5000/api/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          file_data: fileData
-        })
+        body: formData
       });
 
       const data = await response.json();
+      
+      // Process visualization data
+      if (data.process_analysis) {
+        const vizData = convertToVisualizationFormat(data.process_analysis);
+        setProcessAnalysis(vizData);
+      }
       
       setResults({
         llm_response: data.llm_response,
@@ -57,13 +66,8 @@ function App() {
           ml: data.ml_time || 0.5
         }
       });
-
-      if (data.process_analysis) {
-        setProcessAnalysis(data.process_analysis);
-      }
     } catch (error) {
       console.error('Processing failed:', error);
-      // Fallback to mock data if needed
     } finally {
       setIsProcessing(false);
     }
