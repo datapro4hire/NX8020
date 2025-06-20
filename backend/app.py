@@ -64,5 +64,40 @@ def analyze():
         'llm_response': llm_response
     })
 
+@app.route('/api/auth/microsoft')
+def microsoft_login():
+    redirect_uri = url_for('microsoft_authorize', _external=True)
+    return microsoft.authorize_redirect(redirect_uri)
+
+@app.route('/api/auth/microsoft/callback')
+def microsoft_authorize():
+    token = microsoft.authorize_access_token()
+    user_info = microsoft.get('me').json()
+    session['user'] = {
+        'email': user_info.get('mail') or user_info.get('userPrincipalName'),
+        'name': user_info.get('displayName'),
+        'provider': 'microsoft'
+    }
+    return redirect(os.getenv('FRONTEND_URL'))
+
+@app.route('/api/auth/github')
+def github_login():
+    redirect_uri = url_for('github_authorize', _external=True)
+    return github.authorize_redirect(redirect_uri)
+
+@app.route('/api/auth/github/callback')
+def github_authorize():
+    token = github.authorize_access_token()
+    user_info = github.get('user').json()
+    emails = github.get('user/emails').json()
+    primary_email = next(e['email'] for e in emails if e['primary'])
+    
+    session['user'] = {
+        'email': primary_email,
+        'name': user_info.get('name'),
+        'provider': 'github'
+    }
+    return redirect(os.getenv('FRONTEND_URL'))
+
 if __name__ == '__main__':
     app.run(port=5000)
